@@ -4,9 +4,15 @@ library Distributor
 
 (* Error events *)
 type Error =
+  | CodeAddressNotFound
   | CodeCannotClaimNow
   | CodeInvalidTransfer
-  
+
+(* Constants *)
+let zero = Uint128 0
+let one = Uint128 1
+let none = None {ByStr20}
+let true = True
 let zil_address = 0x0000000000000000000000000000000000000000
 
 contract Distributor
@@ -48,7 +54,20 @@ transition AcceptPendingOwnership()
   end
 end
 
+(* @dev: Set updated token balances *)
+transition UpdateBalances()
+end
+
 (* @dev: Transfers the currently available tokens to the sender. *)
 transition Claim()
-  maybe_balances <- balances[_sender]
+  maybe_has_balance <- balances[_sender];
+  match maybe_has_balance with
+    | None =>
+      err = CodeAddressNotFound
+      ThrowError err
+    | Some balance =>
+      delete balances[_sender];
+      (* Note: Here we'd have to convert the remaining map to a list and
+      iterate over it to transfer the tokens. *)
+  end
 end
